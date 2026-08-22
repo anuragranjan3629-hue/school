@@ -1,1 +1,114 @@
 
+"use client";
+
+import { useMemo, useState } from "react";
+import { Search, MapPin, Star, SlidersHorizontal, GitCompare, Bookmark, X, Sparkles } from "lucide-react";
+
+type College = {
+  id: number; name: string; city: string; state: string; fees: number;
+  rating: number; placement: number; courses: string[]; type: string;
+};
+
+const colleges: College[] = [
+  {id:1,name:"RV College of Engineering",city:"Bengaluru",state:"Karnataka",fees:285000,rating:4.6,placement:16.5,courses:["CSE","ISE","ECE"],type:"Private"},
+  {id:2,name:"BMS College of Engineering",city:"Bengaluru",state:"Karnataka",fees:240000,rating:4.4,placement:12.8,courses:["CSE","ISE","AI/ML"],type:"Private"},
+  {id:3,name:"PES University",city:"Bengaluru",state:"Karnataka",fees:410000,rating:4.5,placement:15.2,courses:["CSE","ECE","AI/ML"],type:"Private"},
+  {id:4,name:"NITK Surathkal",city:"Mangaluru",state:"Karnataka",fees:160000,rating:4.8,placement:18.2,courses:["CSE","ECE","IT"],type:"Government"},
+  {id:5,name:"IIT Hyderabad",city:"Hyderabad",state:"Telangana",fees:230000,rating:4.9,placement:22.0,courses:["CSE","EE","AI"],type:"Government"},
+  {id:6,name:"IIIT Bangalore",city:"Bengaluru",state:"Karnataka",fees:320000,rating:4.7,placement:24.0,courses:["CSE","AI","Data Science"],type:"Private"},
+  {id:7,name:"Manipal Institute of Technology",city:"Manipal",state:"Karnataka",fees:520000,rating:4.3,placement:13.5,courses:["CSE","ECE","IT"],type:"Private"},
+  {id:8,name:"VIT Vellore",city:"Vellore",state:"Tamil Nadu",fees:450000,rating:4.5,placement:14.2,courses:["CSE","IT","ECE"],type:"Private"},
+  {id:9,name:"SRM Institute of Science and Technology",city:"Chennai",state:"Tamil Nadu",fees:390000,rating:4.2,placement:10.8,courses:["CSE","AI/ML","ECE"],type:"Private"},
+  {id:10,name:"IIIT Delhi",city:"New Delhi",state:"Delhi",fees:430000,rating:4.7,placement:21.0,courses:["CSE","ECE","AI"],type:"Government"}
+];
+
+const money=(n:number)=>`₹${(n/100000).toFixed(2)}L`;
+
+export default function Home() {
+  const [query,setQuery]=useState("");
+  const [state,setState]=useState("All");
+  const [type,setType]=useState("All");
+  const [sort,setSort]=useState("rating");
+  const [saved,setSaved]=useState<number[]>([]);
+  const [compare,setCompare]=useState<number[]>([]);
+  const [rank,setRank]=useState("");
+  const [exam,setExam]=useState("KCET");
+  const [showPredictor,setShowPredictor]=useState(false);
+
+  const filtered=useMemo(()=>{
+    let data=colleges.filter(c=>
+      `${c.name} ${c.city} ${c.state} ${c.courses.join(" ")}`.toLowerCase().includes(query.toLowerCase()) &&
+      (state==="All"||c.state===state) && (type==="All"||c.type===type)
+    );
+    return [...data].sort((a,b)=>sort==="rating"?b.rating-a.rating:sort==="fees"?a.fees-b.fees:b.placement-a.placement);
+  },[query,state,type,sort]);
+
+  const toggle=(id:number, list:number[], set:(x:number[])=>void)=>{
+    set(list.includes(id)?list.filter(x=>x!==id):[...list,id]);
+  };
+
+  const recommended=rank?colleges.filter(c=>Number(rank)<5000?c.rating>=4.5:c.rating>=4.2).slice(0,3):[];
+
+  return <main>
+    <header className="nav">
+      <div className="brand"><div className="logo">C</div><span>CampusCompare</span></div>
+      <div className="navlinks"><a href="#discover">Discover</a><a href="#compare">Compare</a><a href="#predictor">Predictor</a><button className="login">Sign in</button></div>
+    </header>
+
+    <section className="hero">
+      <div className="heroText">
+        <div className="pill"><Sparkles size={15}/> Smart college discovery</div>
+        <h1>Find the college<br/><span>that fits you.</span></h1>
+        <p>Search, filter and compare colleges using fees, ratings and placement data — all in one clean experience.</p>
+        <button className="primary" onClick={()=>document.getElementById("discover")?.scrollIntoView({behavior:"smooth"})}>Explore colleges</button>
+      </div>
+      <div className="heroCard">
+        <div className="heroStat"><b>10+</b><span>Colleges</span></div>
+        <div className="heroStat"><b>4.9/5</b><span>Top rating</span></div>
+        <div className="heroStat"><b>₹24L</b><span>Best placement</span></div>
+      </div>
+    </section>
+
+    <section id="discover" className="section">
+      <div className="sectionHead"><div><h2>Discover colleges</h2><p>Explore colleges using practical decision-making filters.</p></div><button className="outline" onClick={()=>{setQuery("");setState("All");setType("All")}}><SlidersHorizontal size={16}/> Reset</button></div>
+      <div className="toolbar">
+        <div className="search"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search college, city or course..."/></div>
+        <select value={state} onChange={e=>setState(e.target.value)}><option>All</option><option>Karnataka</option><option>Tamil Nadu</option><option>Telangana</option><option>Delhi</option></select>
+        <select value={type} onChange={e=>setType(e.target.value)}><option>All</option><option>Government</option><option>Private</option></select>
+        <select value={sort} onChange={e=>setSort(e.target.value)}><option value="rating">Top rated</option><option value="fees">Lowest fees</option><option value="placement">Best placement</option></select>
+      </div>
+
+      <div className="grid">
+        {filtered.map(c=><article className="card" key={c.id}>
+          <div className="cardTop"><div className="collegeLogo">{c.name.split(" ").map(x=>x[0]).slice(0,2).join("")}</div><button className={saved.includes(c.id)?"icon active":"icon"} onClick={()=>toggle(c.id,saved,setSaved)}><Bookmark size={18} fill={saved.includes(c.id)?"currentColor":"none"}/></button></div>
+          <h3>{c.name}</h3>
+          <div className="location"><MapPin size={15}/>{c.city}, {c.state}</div>
+          <div className="tags">{c.courses.map(x=><span key={x}>{x}</span>)}</div>
+          <div className="metrics"><div><small>Fees</small><b>{money(c.fees)}</b></div><div><small>Rating</small><b><Star size={14} fill="currentColor"/> {c.rating}</b></div><div><small>Avg. package</small><b>₹{c.placement}L</b></div></div>
+          <button className={compare.includes(c.id)?"compare selected":"compare"} onClick={()=>toggle(c.id,compare,setCompare)}><GitCompare size={16}/>{compare.includes(c.id)?"Added to compare":"Compare"}</button>
+        </article>)}
+      </div>
+      {!filtered.length&&<div className="empty">No colleges match your filters.</div>}
+    </section>
+
+    <section id="compare" className="compareSection section">
+      <div className="sectionHead"><div><h2>Compare side by side</h2><p>Select up to 3 colleges from the cards above.</p></div></div>
+      {compare.length===0?<div className="empty">Choose colleges above to start a comparison.</div>:
+      <div className="tableWrap"><table><thead><tr><th>Metric</th>{compare.slice(0,3).map(id=><th key={id}>{colleges.find(c=>c.id===id)?.name}<button onClick={()=>setCompare(compare.filter(x=>x!==id))}><X size={14}/></button></th>)}</tr></thead><tbody>
+        {["Location","Fees","Rating","Avg. placement"].map(metric=><tr key={metric}><td>{metric}</td>{compare.slice(0,3).map(id=>{const c=colleges.find(x=>x.id===id)!;return <td key={id}>{metric==="Location"?`${c.city}, ${c.state}`:metric==="Fees"?money(c.fees):metric==="Rating"?`★ ${c.rating}`:`₹${c.placement}L`}</td>})}</tr>)}
+      </tbody></table></div>}
+    </section>
+
+    <section id="predictor" className="predictor section">
+      <div><div className="pill">🎯 Predictor</div><h2>What could be a good fit?</h2><p>Enter your exam and rank to get a simple dataset-driven shortlist.</p></div>
+      <div className="predictBox">
+        <select value={exam} onChange={e=>setExam(e.target.value)}><option>KCET</option><option>JEE Main</option><option>COMEDK</option></select>
+        <input value={rank} onChange={e=>setRank(e.target.value.replace(/\D/g,""))} placeholder="Enter your rank"/>
+        <button className="primary" onClick={()=>setShowPredictor(true)}>Predict</button>
+      </div>
+      {showPredictor&&<div className="recommend"><b>Recommendations for {exam} rank {rank || "—"}</b><div>{recommended.map(c=><span key={c.id}>{c.name}</span>)}</div></div>}
+    </section>
+
+    <footer><div className="brand"><div className="logo">C</div><span>CampusCompare</span></div><p>College discovery MVP • Built with Next.js, React and TypeScript</p></footer>
+  </main>;
+}
